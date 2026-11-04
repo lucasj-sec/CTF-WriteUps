@@ -1,0 +1,29 @@
+# Natas 3 — Writeup
+
+## Vulnerabilidade
+"Security through obscurity" via `robots.txt`. Um diretório sensível foi listado no `robots.txt` para pedir que o Google não o indexe, mas isso não impede o acesso direto — só impede que apareça em buscadores.
+
+## Passo a passo
+
+1. Abrir o painel de desenvolvedor (F12) na página do natas3. Um comentário no código avisa que "nem mesmo o Google ajudará você a achar o arquivo" — pista de que o caminho relevante está relacionado a indexação de buscadores.
+
+2. Acessar o caminho padrão `robots.txt` na raiz do site:
+   ```
+   http://natas3.natas.labs.overthewire.org/robots.txt
+   ```
+
+3. O conteúdo revela:
+   ```
+   User-agent: *
+   Disallow: /s3cr3t/
+   ```
+   Isso é só um pedido educado para que motores de busca não indexem `/s3cr3t/` — não é uma restrição de acesso real.
+
+4. Acessar diretamente:
+   ```
+   http://natas3.natas.labs.overthewire.org/s3cr3t/
+   ```
+   O diretório está acessível e contém a senha do natas4.
+
+## Conceito pra levar daqui
+`robots.txt` é uma convenção de cortesia para crawlers, não um controle de acesso. Qualquer caminho listado ali como "Disallow" é, na prática, uma dica de onde procurar algo que o dono do site queria manter fora de buscadores — mas continua publicamente acessível a quem souber o caminho.
