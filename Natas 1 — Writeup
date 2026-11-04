@@ -1,0 +1,17 @@
+# Natas 1 — Writeup
+
+## Vulnerabilidade
+Exposição de credencial em comentário HTML, com proteção superficial (botão direito do mouse bloqueado) que não impede acesso via ferramentas de desenvolvedor.
+
+## Passo a passo
+
+1. Acessar a página do natas1. Reparar que o clique com botão direito está desabilitado (`oncontextmenu`), impedindo o menu de contexto padrão do navegador.
+
+2. Abrir o painel de desenvolvedor direto pelo atalho **F12** (não depende do botão direito).
+
+3. Navegar até a aba **Debugger/Fontes**, abrir o documento **(index)**.
+
+4. Ler o HTML linha a linha (ou usar Ctrl+F para buscar "Natas"/"password"). A senha do natas2 está em um comentário HTML, visível no código-fonte.
+
+## Conceito pra levar daqui
+Bloquear o botão direito do mouse (`oncontextmenu="return false"`) é uma proteção puramente cosmética. Qualquer atalho de teclado (F12) ou menu do navegador acessa o DevTools normalmente. Não é controle de segurança real.
