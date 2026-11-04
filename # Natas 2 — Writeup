@@ -1,0 +1,27 @@
+# Natas 2 — Writeup
+
+## Vulnerabilidade
+Directory listing habilitado em um diretório referenciado pela página, expondo arquivos sensíveis (`users.txt`) que não deveriam estar acessíveis publicamente.
+
+## Passo a passo
+
+1. Abrir o painel de desenvolvedor (F12) e inspecionar os recursos carregados pela página (imagens, scripts, CSS).
+
+2. Reparar numa URL de imagem pouco óbvia: `pixel.png` (imagem de 1x1 pixel, fácil de ignorar visualmente, mas revela um caminho de diretório).
+
+3. Acessar a URL dessa imagem e, na barra de endereço, apagar o nome do arquivo (`pixel.png`), deixando só o diretório pai (`files/`).
+
+4. Como o directory listing está habilitado, o navegador mostra o conteúdo da pasta. Um dos arquivos listados é **`users.txt`**.
+
+5. Tentar acessar `files/users.txt` direto no navegador resulta em erro ("Erro de codificação de conteúdo") — o navegador não processa bem esse tipo de conteúdo.
+
+6. Usar o **curl** para baixar o arquivo sem passar pela interpretação do navegador:
+   ```
+   curl -u natas2:<senha_do_natas2> "http://natas2.natas.labs.overthewire.org/files/users.txt" --compressed
+   ```
+   (`-u` define usuário:senha para autenticação HTTP Basic; `--compressed` lida com a resposta comprimida do servidor)
+
+7. O arquivo retorna uma lista de usuários fictícios e senhas, incluindo a linha `natas3:<senha>`.
+
+## Conceito pra levar daqui
+Diretórios com listagem habilitada expõem qualquer arquivo salvo ali, mesmo sem link direto na página. Todo recurso carregado pela página (até uma imagem de 1 pixel) pode revelar a estrutura de diretórios do servidor — vale sempre testar o diretório pai de qualquer caminho encontrado.
