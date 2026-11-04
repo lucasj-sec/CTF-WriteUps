@@ -1,0 +1,36 @@
+# Natas 4 — Writeup
+
+## Vulnerabilidade
+Controle de acesso baseado em um header HTTP não confiável (`Referer`). O servidor assume que, se a requisição "veio" da página do natas5, o usuário seguiu o fluxo correto e libera a senha — mas o `Referer` é definido pelo cliente e pode ser forjado livremente.
+
+## Passo a passo
+
+1. **Configurar o proxy do Burp Suite no navegador**
+   Burp escuta em `127.0.0.1:8080`. O navegador precisa apontar esse endereço como proxy manual (ou via extensão como FoxyProxy) para que todo tráfego HTTP passe pelo Burp antes de sair.
+
+2. **Instalar o certificado CA do Burp**
+   Necessário para o navegador confiar no HTTPS interceptado (acessar `http://burp`, baixar e importar o certificado nas configurações do navegador).
+
+3. **Navegar até o natas4 e fazer login normalmente**
+   Com o proxy ativo, toda requisição aparece em **Proxy > HTTP history**.
+
+4. **Enviar a requisição para o Repeater**
+   Botão direito em qualquer requisição pro `natas4.natas.labs.overthewire.org` → **Send to Repeater**.
+
+5. **Editar o header Referer**
+   No Repeater, adicionar (ou substituir) o header:
+   ```
+   Referer: http://natas5.natas.labs.overthewire.org/
+   ```
+   Atenção: usar só **um** `Referer` (remover o original enviado pelo navegador) e sem erro de digitação (`Referer:`, um só `:`), e sem path extra depois da barra (o servidor compara a string exata).
+
+6. **Enviar (Send) e ler a resposta**
+   O servidor responde com a senha do natas5.
+
+## Erros cometidos na primeira tentativa
+- Deixei dois headers `Referer` na requisição (o original do navegador + o que adicionei). O servidor considerou o primeiro, que apontava para o próprio natas4, então o acesso continuou negado.
+- Digitei `Referer::` com dois pontos no header adicionado, o que invalidava a sintaxe.
+- Deixei `/index.php` no final da URL do Referer; o servidor exige a string exata `http://natas5.natas.labs.overthewire.org/`, sem sufixo.
+
+## Conceito pra levar daqui
+Qualquer dado que o **cliente** controla (headers, cookies, parâmetros de URL, corpo da requisição) não deve ser usado como base de autorização sem validação no servidor. O `Referer` é só uma string arbitrária que o navegador manda por educação, não é prova de nada.
