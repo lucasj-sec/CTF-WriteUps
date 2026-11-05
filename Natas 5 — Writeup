@@ -1,0 +1,26 @@
+# Natas 5 — Writeup
+
+## Vulnerabilidade
+Controle de sessão baseado em um **cookie não confiável**. O servidor usa o cookie `loggedin` pra decidir se o usuário está autenticado, mas o valor é só um dado guardado no navegador, não há validação de sessão real no servidor.
+
+## Passo a passo
+
+1. **Login** na página do natas5 com as credenciais do nível (`natas5` / senha do natas4).
+   A página retorna: `Access disallowed. You are not logged in`.
+
+2. **Abrir o painel de desenvolvedor (F12)** no navegador.
+
+3. **Ir em Storage (ou Application) > Cookies**
+   Localizar o cookie da página, chave `loggedin`, valor `0`.
+
+4. **Editar o valor de `0` para `1`**
+   Direto na célula do devtools, sem precisar de proxy.
+
+5. **Recarregar a página (F5)**
+   O navegador reenvia a requisição já com o cookie alterado, e o servidor libera o acesso, retornando a senha do natas6.
+
+## Observação
+Esse nível também poderia ser resolvido pelo Burp (editando o header `Cookie: loggedin=1` no Repeater), mas como é um valor único e já existente no navegador, o devtools resolve mais rápido, sem precisar configurar proxy.
+
+## Conceito pra levar daqui
+Mesma lição do natas4, variando o vetor: **qualquer dado controlado pelo cliente** (header, cookie, parâmetro, campo oculto de formulário) não é prova de autenticação ou autorização se o servidor não valida isso de verdade (ex: sessão assinada, token server-side). Aqui bastou mudar um bit visível no navegador.
