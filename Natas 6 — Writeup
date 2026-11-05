@@ -1,0 +1,35 @@
+# Natas 6 — Writeup
+
+## Vulnerabilidade
+Exposição de código-fonte / segredo via arquivo `include` acessível diretamente. A lógica do PHP usa uma variável secreta vinda de um arquivo separado (`secret.inc`), mas esse arquivo fica dentro da pasta pública do site, então qualquer um pode acessá-lo direto pela URL e ler o valor em texto puro.
+
+## Passo a passo
+
+1. **Abrir "View sourcecode"** na página do natas6. O PHP exibido mostra algo como:
+   ```php
+   include "includes/secret.inc";
+   ...
+   if ($secret == $_POST['secret']) { ... }
+   ```
+   Isso revela o caminho do arquivo incluído: `includes/secret.inc`.
+
+2. **Montar a URL do arquivo incluído**, usando a raiz do site (sem `index.php`, sem nada extra):
+   ```
+   http://natas6.natas.labs.overthewire.org/includes/secret.inc
+   ```
+
+3. **Acessar essa URL diretamente.** A página vem praticamente em branco visualmente, porque o conteúdo é código PHP, não HTML renderizável.
+
+4. **Abrir o F12 > Inspector (ou view-source) nessa página.** O código fonte real aparece:
+   ```php
+   <?
+   $secret = "FOEIUWGHFEEUHOFUOIU";
+   ?>
+   ```
+
+5. **Copiar o valor da variável `$secret`** e colar no campo de senha da página principal do natas6.
+
+6. **Enviar o formulário.** O servidor valida e retorna a senha do natas7.
+
+## Conceito pra levar daqui
+Um arquivo "interno" só está protegido se o servidor realmente bloquear o acesso direto a ele (configuração de servidor, fora do document root, ou extensão tratada como não executável/não servível). Simplesmente não ter link visível pra um arquivo não é proteção, é "security through obscurity" — mesma falha de fundo do `robots.txt` do natas3/4, variando onde o segredo fica guardado.
