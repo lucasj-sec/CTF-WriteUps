@@ -1,0 +1,54 @@
+# Natas 7 — Writeup
+
+## Vulnerabilidade
+**LFI (Local File Inclusion)**. A página usa um parâmetro de URL (`page`) para decidir qual arquivo incluir/exibir no servidor, sem validar ou restringir esse valor. Isso permite apontar o parâmetro para qualquer arquivo do sistema que o servidor tenha permissão de ler.
+
+## Passo a passo
+
+1. **Observar a navegação da página.** As abas (Home / About) mudam o conteúdo via um parâmetro na URL:
+   ```
+   http://natas7.natas.labs.overthewire.org/index.php?page=home
+   ```
+
+2. **Testar substituir o valor do parâmetro por um caminho de arquivo do sistema**, para confirmar a vulnerabilidade:
+   ```
+   http://natas7.natas.labs.overthewire.org/index.php?page=/etc/passwd
+   ```
+   O servidor retornou o conteúdo completo do `/etc/passwd`, confirmando LFI — inclusive revelando os usuários `natasX` do sistema.
+
+3. **Usar o caminho padrão do OverTheWire Natas**, onde cada nível guarda a senha do próximo (convenção documentada do próprio jogo, não algo a ser descoberto por enumeração):
+   ```
+   /etc/natas_webpass/natasX
+   ```
+   (X = número do próximo nível)
+
+4. **Montar a URL final:**
+   ```
+   http://natas7.natas.labs.overthewire.org/index.php?page=/etc/natas_webpass/natas8
+   ```
+
+5. **Ler a senha retornada diretamente na página.**
+
+## Conceito pra levar daqui
+**LFI** é quando um parâmetro controlado pelo cliente decide qual arquivo o servidor inclui/exibe, sem validação. Vetor clássico de reconhecimento manual: tentar `/etc/passwd` primeiro (arquivo público e previsível em qualquer Linux) pra confirmar a falha, depois mirar em arquivos sensíveis específicos da aplicação.
+
+Em cenários reais, quando esse tipo de parâmetro tenta filtrar entradas (bloquear `../`, forçar extensão), os bypasses mais comuns envolvem:
+- **Path traversal** (`../../../etc/passwd`)
+- **PHP wrappers** (`php://filter/convert.base64-encode/resource=arquivo`), que permite ler código-fonte sem que o PHP tente executá-lo
+
+## Nota lateral — resolução de problema no VMware
+Durante a configuração do teclado ABNT2 no Kali (`dpkg-reconfigure keyboard-configuration`), um arquivo órfão de uma tentativa anterior (`/etc/X11/xorg.conf.d/00-keyboard.conf`, criado com sintaxe inválida de uma configuração destinada ao Arch Linux) quebrou o XServer após o reboot, deixando o sistema preso em modo texto.
+
+**Diagnóstico em camadas:**
+```
+sudo journalctl -xeu lightdm.service      # mostrou falha no ExecStart, sem causa raiz
+sudo cat /var/log/lightdm/lightdm.log     # mostrou que o XServer saía com erro
+sudo cat /var/log/lightdm/x-0.log         # revelou o erro exato: parse error no arquivo xorg.conf.d
+```
+
+**Correção:**
+```
+sudo rm /etc/X11/xorg.conf.d/00-keyboard.conf
+sudo systemctl reset-failed lightdm.service
+sudo systemctl start lightdm
+```
