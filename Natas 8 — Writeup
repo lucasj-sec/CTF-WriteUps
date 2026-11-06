@@ -1,0 +1,50 @@
+# Natas 8 — Writeup
+
+## Vulnerabilidade
+Exposição de lógica de codificação via código-fonte visível. O "segredo" usado na validação do formulário está salvo já codificado (`$encodedSecret`), mas a função que gera essa codificação está exposta no `view sourcecode`, permitindo reverter o processo e obter o valor original.
+
+## Código-fonte relevante
+```php
+$encodedSecret = "<valor em hex>";
+
+function encodeSecret($secret) {
+    return bin2hex(strrev(base64_encode($secret)));
+}
+
+if (encodeSecret($_POST['secret']) == $encodedSecret) {
+    print "Access granted...";
+}
+```
+
+## Passo a passo
+
+1. **Abrir "View sourcecode"** na página do natas8 e localizar `$encodedSecret` e a função `encodeSecret()`.
+
+2. **Identificar a cadeia de transformações aplicadas ao segredo original:**
+   ```
+   secret → base64_encode → strrev → bin2hex → $encodedSecret
+   ```
+
+3. **Reverter na ordem inversa** (a última transformação aplicada é a primeira a ser desfeita):
+   - `bin2hex` → desfazer convertendo hex de volta para texto/bytes
+   - `strrev` → desfazer invertendo a string novamente
+   - `base64_encode` → desfazer decodificando Base64
+
+4. **Executar no terminal:**
+   ```bash
+   echo "<valor de $encodedSecret>" | xxd -r -p | rev | base64 -d
+   ```
+   (ou usar o CyberChef: receita **From Hex → Reverse → From Base64**, colando o valor no campo de entrada)
+
+5. **Colar o resultado** (o segredo em texto puro) no campo "Input secret" do formulário e enviar.
+
+## Glossário das funções (pra fixar)
+- **`bin2hex`**: converte qualquer string/bytes para sua representação em caracteres hexadecimais (cada byte vira 2 caracteres hex). "Bin" aqui é "dado binário" (sequência de bytes), não o sistema binário de 0s e 1s.
+- **`strrev`** (*string reverse*): inverte a ordem dos caracteres de uma string (`"abc"` → `"cba"`). Desfazer é aplicar de novo.
+- **`base64_encode`**: converte bytes para uma representação em texto usando o alfabeto Base64, comum para transportar dados binários em contextos que só aceitam texto.
+
+## Conceito pra levar daqui
+Codificação (encoding) **não é criptografia**. Toda função usada aqui (hex, base64, reverse) é reversível sem precisar de chave ou senha, qualquer um que veja o algoritmo consegue desfazer. "Esconder" um segredo atrás de codificação, mesmo encadeada, não é proteção real — é só ofuscação, quebrável assim que o código-fonte vaza.
+
+## Ferramenta
+**CyberChef** (gchq.github.io/CyberChef) é a ferramenta de referência para esse tipo de cadeia de transformação — útil não só para decode, mas para qualquer manipulação de dados em pipeline (regex, hashing, parsing, extração).
